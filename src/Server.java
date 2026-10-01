@@ -1,20 +1,17 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Scanner;
 
 /*
 
-server
+server thread
 - gen server name
 - wait for client connection
 ...
 - once connected:
 - take in init client message
-- print client name  and server name
+- print client name and server name
 - input 1~100 as server int
 - display client int, server int, sum(c,s)
 
@@ -29,63 +26,68 @@ concurrent server (+5 pts)
 */
 
 public class Server {
-    public static void main(String[] args){
+    static final int PORT = 6767;
+    private ServerSocket serverSocket;
+    private String serverName;
 
-    Socket socket = null;
-    InputStreamReader yn_reader = null;
-    OutputStreamWriter op_writer = null;
+    public Server(ServerSocket serverSocket, String serverName){
+        this.serverSocket = serverSocket;
+        this.serverName = serverName;
+    }
 
-    BufferedReader buff_reader = null;
-    BufferedWriter buff_writer = null;
+    public void startServer(){
+        System.out.println("--START SERVER--");
+        System.out.println("Server name: " + serverName);
+        
+        try {
+            while (!serverSocket.isClosed()){
+                Socket socket = serverSocket.accept();
+                ServerThread serverThread = new ServerThread(socket, serverName);
 
-    ServerSocket server_socket = null;
-    String server_name = null;
-
-    
-
-        while (true) {
-            try {
-                server_socket = new ServerSocket(1234);
-                socket = server_socket.accept();
-
-                yn_reader = new InputStreamReader(socket.getInputStream());
-                op_writer = new OutputStreamWriter(socket.getOutputStream());
-
-                buff_reader = new BufferedReader(yn_reader);
-                buff_writer = new BufferedWriter(op_writer);
-
-                Scanner s = new Scanner(System.in); 
-
-                while (true){
-                    String client_msg = buff_reader.readLine();
-                    // parse client_msg
-                    //print client_msg
-
-                    System.out.println("Insert an integer (0 ~ 100): ");
-                    int input = s.nextInt();
-
-                    //use server_msg and print here
-                    
-
-                    buff_writer.write("");
-                    buff_writer.newLine(); 
-                    buff_writer.flush();
-                    
-                    //check client_n value from client_msg
-                    if (client_n > "100" || client_n < 1)
-                        break;
-                }
-
-                socket.close();
-                yn_reader.close();
-                op_writer.close();
-                buff_reader.close();
-                buff_writer.close();
-                server_socket.close();
-
-            } catch(Exception e){
-                e.printStackTrace();
+                serverThread.start();
             }
         }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+        System.out.println("--SERVER TERMINATED--");
+    }
+
+    public void closeServerSocket(){
+        try{
+            if (serverSocket != null){
+                serverSocket.close();
+            }
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /* TODO */
+    public void closeServer(){
+
+    }
+
+    public static void main(String[] args){
+
+        Scanner s = new Scanner(System.in);
+
+        System.out.println("--INIT--");
+        System.out.println("Enter a server name:");
+
+        String serverName = s.nextLine(); 
+
+        try {
+            ServerSocket serverSocket = new ServerSocket(PORT);
+            Server server = new Server(serverSocket, serverName);
+            server.startServer();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+        s.close();
     }
 }
