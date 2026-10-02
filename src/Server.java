@@ -2,7 +2,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Scanner;
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
 
 /*
 
@@ -30,6 +31,8 @@ public class Server {
     static final int PORT = 6767;
     private ServerSocket serverSocket;
     private String serverName;
+    
+    private final List<ServerThread> serverThreads = new CopyOnWriteArrayList<>();
 
     public Server(ServerSocket serverSocket, String serverName){
         this.serverSocket = serverSocket;
@@ -43,16 +46,27 @@ public class Server {
         try {
             while (!serverSocket.isClosed()){
                 Socket socket = serverSocket.accept();
-                ServerThread serverThread = new ServerThread(socket, serverName, this);
-
-                serverThread.start();
+                try {
+                    ServerThread serverThread = new ServerThread(socket, serverName, this);
+                    serverThreads.add(serverThread);
+                    serverThread.start();
+                } catch (IOException e) {
+                    socket.close();
+                    System.err.println("Could not create client thread: "+ e.getMessage());
+                }
             }
         }
-        catch (IOException e){
-            e.printStackTrace();
+        catch (IOException e){        
+            if (!serverSocket.isClosed()) {
+                e.printStackTrace();
+            }
         }
 
         System.out.println("--SERVER TERMINATED--");
+    }
+
+    public void removeThread(ServerThread thread) {
+        serverThreads.remove(thread);
     }
 
     public void closeServerSocket(){
@@ -70,11 +84,11 @@ public class Server {
     public void closeServer(){
         System.out.println("--CLOSING SERVER--");
 
-        for (ServerThread thread : new ArrayList<>(ServerThread.serverThreads)) {
+        closeServerSocket();
+        for (ServerThread thread : serverThreads) {
             thread.shutdown();
         }
-        ServerThread.serverThreads.clear();
-        closeServerSocket();
+        serverThreads.clear();
 
         System.out.println("--SERVER CLOSED--");
     }
@@ -98,6 +112,10 @@ public class Server {
         }
 
         s.close();
+    }
+
+    public ServerSocket getServerSocket(){
+        return this.serverSocket;
     }
 
 }

@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.InputStreamReader;
 import java.net.Socket;
-import java.util.ArrayList;
+import java.util.Arrays;
 
 /*
 server thread
@@ -23,7 +23,7 @@ server thread
 */
 
 public class ServerThread extends Thread {
-    public  static ArrayList<ServerThread> serverThreads = new ArrayList<>();
+
     private Socket socket;
     private Server server;
 
@@ -36,69 +36,66 @@ public class ServerThread extends Thread {
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
 
-    public ServerThread(Socket socket, String serverName, Server server){
-        try {
-            this.socket = socket;
-            this.serverName = serverName;
-            this.server = server;
+    public ServerThread(Socket socket, String serverName, Server server) throws IOException {
+        this.socket = socket;
+        this.serverName = serverName;
+        this.server = server;
 
-            this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            serverThreads.add(this);
-        } catch (IOException e){
-            closeThread(socket, bufferedReader, bufferedWriter);
-        }
+        this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     }
 
     @Override public void run(){
         String messageFromClient;   
 
         try {
-            while (!socket.isClosed()){
-                messageFromClient = bufferedReader.readLine();
+            messageFromClient = bufferedReader.readLine();
 
-                System.out.println("");
-                System.out.println("--RECEIVING--");
-                System.out.println(messageFromClient);
-                System.out.println("--RECEIVING--");
-                System.out.println("");
-
-                /* preconditions client ONLY SENDS message in the form {Client: <STRING> <INT>} */
-                String[] arr = messageFromClient.split(" ");
-                this.clientName = arr[1];
-                this.clientNum = Integer.parseInt(arr[2]);
-
-                /* Rand 1~100 */
-                serverNum = (int)(Math.random() * 100) + 1;
-                int sum = clientNum + serverNum;
-
-                System.out.println("");
-                System.out.println("-- Summary --");
-                System.out.println("Client:" + clientName + "has chosen" + clientNum);
-                System.out.println("Server:" + serverName + "generated" + serverNum);
-                System.out.println("Total:" + sum);
-                System.out.println("-------------");
-                System.out.println("");
-
-                System.out.println("");
-                System.out.println("--SENDING--");
-                String messageFromServer = "Server: "   + serverName + " " + serverNum;
-                System.out.println("--SENDING--");
-                System.out.println("");
-
-                bufferedWriter.write(messageFromServer);
-                bufferedWriter.newLine();
-                bufferedWriter.flush();
-
-                if (clientNum < 1 || clientNum > 100){
-                    server.closeServer();
-                    break;
-                } 
+            /* Disconnected Client */
+            if (messageFromClient == null) {
+                return;
             }
+
+            System.out.println("");
+            System.out.println("--RECEIVING--");
+            System.out.println(messageFromClient);
+            System.out.println("--RECEIVING--");
+            System.out.println("");
+
+            /* preconditions client ONLY SENDS message in the form "<STRING> <INT>"" */
+            String[] msg = messageFromClient.split(" ");
+            clientNum = Integer.parseInt(msg[msg.length - 1]);
+            clientName = String.join(" ", Arrays.copyOf(msg, msg.length - 1));
+
+            /* Rand 1~100 */
+            serverNum = (int)(Math.random() * 100) + 1;
+            int sum = clientNum + serverNum;
+
+            System.out.println("");
+            System.out.println("-- Summary --");
+            System.out.println("Client:" + clientName + "has chosen" + clientNum);
+            System.out.println("Server:" + serverName + "generated" + serverNum);
+            System.out.println("Total:" + sum);
+            System.out.println("-------------");
+            System.out.println("");
+
+            System.out.println("");
+            System.out.println("--SENDING--");
+            String messageFromServer = "Server: "   + serverName + " " + serverNum;
+            System.out.println("--SENDING--");
+            System.out.println("");
+
+            bufferedWriter.write(messageFromServer);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+
+            if (clientNum < 1 || clientNum > 100){
+                server.closeServer();
+            } 
         } catch (IOException e){
             e.printStackTrace();
         } finally {
-            closeThread(socket, bufferedReader, bufferedWriter);
+            shutdown();
         }
     }
 
@@ -109,7 +106,9 @@ public class ServerThread extends Thread {
     }
 
     public void closeThread(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
-        serverThreads.remove(this);
+        if (server != null){
+            server.removeThread(this);
+        }
 
         try {
             if (bufferedReader != null){
