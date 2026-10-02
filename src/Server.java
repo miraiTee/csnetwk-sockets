@@ -1,30 +1,17 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Scanner;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
 
 /*
-
-server thread
-- gen server name
-- wait for client connection
-...
-- once connected:
-- take in init client message
-- print client name and server name
-- input 1~100 as server int
-- display client int, server int, sum(c,s)
-
-IF client int is OOR (n<1 OR n>100)
-- terminate and release all sockets
-- shut down server
-ELSE
-- continue receiving?
-
-concurrent server (+5 pts)
-- relegate each client connecting to a thread 
+    Server class acts as the hub for clients to commune and pass numbers 
+    around and sum it up.
+    
+    The server only shuts down unless its forcefully terminated or a client sends
+    an out of range number (n>100 || n<1).
 */
 
 public class Server {
@@ -32,31 +19,25 @@ public class Server {
     private ServerSocket serverSocket;
     private String serverName;
     
-    private final List<ServerThread> serverThreads = new CopyOnWriteArrayList<>();
+    private final List<ServerThread> serverThreads = Collections.synchronizedList(new ArrayList<>());
 
-    public Server(ServerSocket serverSocket, String serverName){
+    public Server(ServerSocket serverSocket, String serverName) {
         this.serverSocket = serverSocket;
         this.serverName = serverName;
     }
 
-    public void startServer(){
-        System.out.println("--START SERVER--");
+    /* Starts server */
+    public void startServer() {
         System.out.println("Server name: " + serverName);
         
         try {
-            while (!serverSocket.isClosed()){
+            while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
-                try {
-                    ServerThread serverThread = new ServerThread(socket, serverName, this);
-                    serverThreads.add(serverThread);
-                    serverThread.start();
-                } catch (IOException e) {
-                    socket.close();
-                    System.err.println("Could not create client thread: "+ e.getMessage());
-                }
+                ServerThread serverThread = new ServerThread(socket, serverName, this);
+                serverThreads.add(serverThread);
+                serverThread.start();
             }
-        }
-        catch (IOException e){        
+        } catch (IOException e) {        
             if (!serverSocket.isClosed()) {
                 e.printStackTrace();
             }
@@ -65,57 +46,65 @@ public class Server {
         System.out.println("--SERVER TERMINATED--");
     }
 
+    /* Removes a thread from the list */
     public void removeThread(ServerThread thread) {
         serverThreads.remove(thread);
     }
 
-    public void closeServerSocket(){
-        try{
-            if (serverSocket != null){
+    /* Close Server */
+    public void closeServer() {
+        try {
+            if (serverSocket != null) {
                 serverSocket.close();
             }
-        }
-        catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-    }
 
-    /* TODO */
-    public void closeServer(){
-        System.out.println("--CLOSING SERVER--");
-
-        closeServerSocket();
-        for (ServerThread thread : serverThreads) {
-            thread.shutdown();
+        List<ServerThread> threadsToClose;
+        synchronized (serverThreads) {
+            threadsToClose = new ArrayList<>(serverThreads);
         }
-        serverThreads.clear();
 
-        System.out.println("--SERVER CLOSED--");
+        for (ServerThread thread : threadsToClose) {
+            thread.closeThread();
+        }
+
+        serverThreads.clear();
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
 
-        Scanner s = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
 
         System.out.println("--INIT--");
-        System.out.println("Enter a server name:");
 
-        String serverName = s.nextLine(); 
+        boolean loop = true;
+        String serverName = null;
+
+        /* Input Name */
+        while (loop) {
+            System.out.print("Enter a server name (letters only): ");
+            String input = scanner.nextLine().trim();
+
+            if (input.matches("[A-Za-z]+")) {
+                serverName = input;
+                loop = false;
+            }
+
+            if (loop) {
+                System.out.println("Invalid name. Use alphabetic characters only.");
+            }
+        }
 
         try {
             ServerSocket serverSocket = new ServerSocket(PORT);
             Server server = new Server(serverSocket, serverName);
             server.startServer();
-        }
-        catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
-        s.close();
+        scanner.close();
     }
-
-    public ServerSocket getServerSocket(){
-        return this.serverSocket;
-    }
-
 }
