@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Scanner;
+import java.util.ArrayList;
 
 /*
 
@@ -42,7 +43,7 @@ public class Server {
         try {
             while (!serverSocket.isClosed()){
                 Socket socket = serverSocket.accept();
-                ServerThread serverThread = new ServerThread(socket, serverName);
+                ServerThread serverThread = new ServerThread(socket, serverName, this);
 
                 serverThread.start();
             }
@@ -67,7 +68,15 @@ public class Server {
 
     /* TODO */
     public void closeServer(){
+        System.out.println("--CLOSING SERVER--");
 
+        for (ServerThread thread : new ArrayList<>(ServerThread.serverThreads)) {
+            thread.shutdown();
+        }
+        ServerThread.serverThreads.clear();
+        closeServerSocket();
+
+        System.out.println("--SERVER CLOSED--");
     }
 
     public static void main(String[] args){
@@ -90,4 +99,5 @@ public class Server {
 
         s.close();
     }
+
 }
