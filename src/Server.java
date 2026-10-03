@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 /*
     Server class acts as the hub for clients to commune and pass numbers 
-    around and sum it up.
+    around and sum it up. Cretes a server thread to handle each client separately.
     
     The server only shuts down unless its forcefully terminated or a client sends
     an out of range number (n>100 || n<1).
@@ -28,22 +28,23 @@ public class Server {
 
     /* Starts server */
     public void startServer() {
-        System.out.println("Server name: " + serverName);
+        System.out.println("Server name: " + serverName + "on Port: " + PORT);
+        System.out.print("> Waiting for clients... ");
         
         try {
             while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
+                System.out.print("> Client detected. Relegating to a thread ");
                 ServerThread serverThread = new ServerThread(socket, serverName, this);
                 serverThreads.add(serverThread);
                 serverThread.start();
             }
         } catch (IOException e) {        
             if (!serverSocket.isClosed()) {
+                System.out.print("> Server Thread unable to be created. ");
                 e.printStackTrace();
             }
         }
-
-        System.out.println("--SERVER TERMINATED--");
     }
 
     /* Removes a thread from the list */
@@ -71,6 +72,7 @@ public class Server {
         }
 
         serverThreads.clear();
+        System.out.println("--SERVER TERMINATED--");
     }
 
     public static void main(String[] args) {
@@ -84,7 +86,7 @@ public class Server {
 
         /* Input Name */
         while (loop) {
-            System.out.print("Enter a server name (letters only): ");
+            System.out.print("Enter server name (letters only): ");
             String input = scanner.nextLine().trim();
 
             if (input.matches("[A-Za-z]+")) {
@@ -93,7 +95,7 @@ public class Server {
             }
 
             if (loop) {
-                System.out.println("Invalid name. Use alphabetic characters only.");
+                System.out.println("\nInvalid name. Use letters only.\\n");
             }
         }
 

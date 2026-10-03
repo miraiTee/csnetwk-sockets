@@ -5,6 +5,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 
+/*
+    Serverthread connects to a single client. After which it handles the
+    aforementioned receiving and sending message back to client.
+*/
+
 public class ServerThread extends Thread {
 
     private Socket socket;
@@ -34,7 +39,7 @@ public class ServerThread extends Thread {
         String messageFromClient = bufferedReader.readLine();
 
         if (messageFromClient == null) {
-            System.out.println("\nClient closed the connection.");
+            System.out.println("\nClient disconnected.\n");
             return false;
         }
 
@@ -44,7 +49,7 @@ public class ServerThread extends Thread {
         String[] parts = messageFromClient.split(":", 2);
 
         if (parts.length != 2) {
-            throw new IOException("Invalid client message format.");
+            throw new IOException("Invalid client message.");
         }
 
         clientName = parts[0];
@@ -68,6 +73,7 @@ public class ServerThread extends Thread {
     }
 
     public void sendMessage() throws IOException {
+        System.out.print("> Sending message to " + clientName);
         String messageToSend = serverName + ":" + serverNum;
 
         bufferedWriter.write(messageToSend);
@@ -103,6 +109,8 @@ public class ServerThread extends Thread {
         if (threadClosed) {
             return;
         }
+
+            System.out.print("> Closing thread for client " + clientName);
 
         threadClosed = true;
 

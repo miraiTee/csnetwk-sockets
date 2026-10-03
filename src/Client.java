@@ -7,6 +7,13 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.Scanner;
 
+
+/*
+    Client opens and searches for the server, if the server is not found.
+    It waits for a while until it deems reachable. THe client then sends a message
+    and await for a reply from the server. after which it terminates itself.
+*/
+
 public class Client {
     private Socket socket;
 
@@ -34,6 +41,7 @@ public class Client {
         bufferedWriter.write(messageToSend);
         bufferedWriter.newLine();
         bufferedWriter.flush();
+        System.out.println("Sent message to server...");
     }
 
     public boolean listenMessage() throws IOException {
@@ -43,6 +51,8 @@ public class Client {
             System.out.println("Server closed the connection.");
             return false;
         }
+            
+        System.out.println("Received response from server...");
 
         String[] parts = messageFromServer.split(":", 2);
 
@@ -88,6 +98,8 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        System.out.println("> Closing client socket... goodbye!");
     }
 
     private static Socket connectToServer() throws InterruptedException {
@@ -96,7 +108,9 @@ public class Client {
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 System.out.println("Trying to connect to server... Attempt " + attempt + "/" + maxAttempts);
-                return new Socket("localhost", 6767);
+                Socket socket = new Socket("localhost", 6767);
+                System.out.println("Connected to server...");
+                return socket;
             } catch (IOException e) {
                 System.out.println("Connection attempt failed.");
 
@@ -130,7 +144,7 @@ public class Client {
             }
 
             if (loop){
-                System.out.println("Invalid name. Use alphabetic characters only.");
+                System.out.println("Invalid name. Use letters only.\n");
             }
         }
 
@@ -139,7 +153,7 @@ public class Client {
         boolean validInput = false;
 
         while (!validInput) {
-            System.out.println("Enter an integer (1~100) |Out of Range Int will end server|: ");
+            System.out.println("Enter an integer (1~100) | Out of Range Int will end server |: ");
 
             if (scanner.hasNextInt()) {
                 clientNum = scanner.nextInt();
