@@ -1,4 +1,10 @@
 
+/*  
+    CSNETWK S03
+    *Mirai & Ram
+    (Java Server)
+*/
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -6,7 +12,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.Scanner;
-
 
 /*
     Client opens and searches for the server, if the server is not found.

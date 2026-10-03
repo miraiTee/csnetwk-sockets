@@ -1,3 +1,10 @@
+
+/*  
+    CSNETWK S03
+    *Mirai & Ram
+    (Java Server)
+*/
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
